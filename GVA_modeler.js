@@ -115,6 +115,57 @@ let labels;
 let scenario1, scenario2;
 let refreshProfit1 = () => { }, refreshProfit2 = () => { };
 let updateEmployee1;
+let revenueUnit = 'k';
+
+function roundToSigFigs(num, sig) {
+  if (num === 0) return 0;
+  const sign = num < 0 ? -1 : 1;
+  const abs = Math.abs(num);
+  const magnitude = Math.floor(Math.log10(abs));
+  const factor = Math.pow(10, sig - 1 - magnitude);
+  return sign * Math.round(abs * factor) / factor;
+}
+
+function formatRevenueDisplay(valueInK) {
+  if (revenueUnit === 'm') {
+    const millions = roundToSigFigs(valueInK / 1000, 2);
+    return '£' + millions + 'm';
+  }
+  const k = roundToSigFigs(valueInK, 2);
+  return '£' + k.toLocaleString() + 'k';
+}
+
+function computeNiceTicks(min, max, targetCount) {
+  const range = max - min;
+  if (range <= 0) return [min];
+  const rawStep = range / targetCount;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const residual = rawStep / magnitude;
+  let niceResidual;
+  if (residual >= 5) niceResidual = 10;
+  else if (residual >= 2) niceResidual = 5;
+  else if (residual >= 1) niceResidual = 2;
+  else niceResidual = 1;
+  const step = niceResidual * magnitude;
+  const ticks = [];
+  const first = Math.ceil(min / step) * step;
+  for (let tick = first; tick <= max + step * 1e-6; tick += step) {
+    ticks.push(Math.round(tick * 1e6) / 1e6);
+  }
+  return ticks;
+}
+
+function setRevenueUnit(unit) {
+  if (unit === revenueUnit) return;
+  revenueUnit = unit;
+  const kBtn = document.getElementById('unit-toggle-k');
+  const mBtn = document.getElementById('unit-toggle-m');
+  if (kBtn) kBtn.classList.toggle('active', unit === 'k');
+  if (mBtn) mBtn.classList.toggle('active', unit === 'm');
+  document.querySelectorAll('.unit-suffix').forEach(el => { el.textContent = unit; });
+  if (scenario1) scenario1.refresh();
+  if (scenario2) scenario2.refresh();
+}
 
 // Dynamic Base Year Shifting Logic
 function getBaseYear() {
@@ -433,8 +484,8 @@ function createScenarioChart({ svgId, summaryId, title, series, onUpdate }) {
     <g class="points"></g>
     <g class="x-labels"></g>
     <g class="y-labels"></g>
-    <text x="20" y="164" transform="rotate(-90 20 164)" class="label">Revenue</text>
-    <text x="296" y="364" class="label">Time</text>
+    <text x="20" y="164" class="label y-axis-title">Revenue</text>
+    <text x="296" y="${plot.bottom + 46}" class="label">Time</text>
   `;
 
   const gridGroup = svg.querySelector('.grid');
@@ -444,6 +495,7 @@ function createScenarioChart({ svgId, summaryId, title, series, onUpdate }) {
   const pointsGroup = svg.querySelector('.points');
   const xLabelsGroup = svg.querySelector('.x-labels');
   const yLabelsGroup = svg.querySelector('.y-labels');
+  const yAxisTitle = svg.querySelector('.y-axis-title');
 
   function make(tag, attrs = {}, parent) {
     const el = document.createElementNS(NS, tag);
@@ -452,34 +504,39 @@ function createScenarioChart({ svgId, summaryId, title, series, onUpdate }) {
     return el;
   }
   const isChart2 = (svgId === 'chart2');
+  const isEditable = (i) => !(isChart2 && i === 0);
 
   summary.innerHTML = data.map((d, i) => `
     <div class="metric">
       <small>${d.label}</small>
-      ${(i === 0 && !isChart2) ? `
+      ${isEditable(i) ? `
         <div style="display: flex; align-items: center; gap: 2px;">
           <span style="font-size: 0.9rem; font-weight: 700;">£</span>
-          <input type="number" id="revenue-input-${svgId}-${i}" value="${Math.round(d.value)}" style="width: 80%; font: inherit; font-size: 0.9rem; font-weight: 700; padding: 2px; border: 1px solid var(--border); border-radius: 6px; text-align: right; color: var(--accent);">
-          <span style="font-size: 0.9rem; font-weight: 700;">k</span>
+          <input type="number" id="revenue-input-${svgId}-${i}" class="no-spinner" step="any" value="${revenueUnit === 'm' ? Math.round((d.value / 1000) * 100) / 100 : Math.round(d.value)}" style="width: 80%; font: inherit; font-size: 0.9rem; font-weight: 700; padding: 2px; border: 1px solid var(--border); border-radius: 6px; text-align: right; color: var(--accent);">
+          <span class="unit-suffix" style="font-size: 0.9rem; font-weight: 700;">${revenueUnit}</span>
         </div>
+        ${i > 0 ? `<div id="yoy-text-${svgId}-${i}" style="font-size: 0.75rem; color: var(--accent); font-weight: 600;"></div>` : ''}
       ` : `
         <div style="display: flex; flex-direction: column; gap: 2px;">
           <strong id="revenue-text-${svgId}-${i}"></strong>
-          ${i > 0 ? `<div id="yoy-text-${svgId}-${i}" style="font-size: 0.75rem; color: var(--accent); font-weight: 600;"></div>` : ''}
         </div>
       `}
     </div>
   `).join('');
 
-  const revInputs = data.map((d, i) => (i === 0 && !isChart2) ? document.getElementById(`revenue-input-${svgId}-${i}`) : document.getElementById(`revenue-text-${svgId}-${i}`));
+  const revInputs = data.map((d, i) => isEditable(i) ? document.getElementById(`revenue-input-${svgId}-${i}`) : document.getElementById(`revenue-text-${svgId}-${i}`));
 
-  if (revInputs[0] && !isChart2) {
-    revInputs[0].addEventListener('input', (e) => {
-      const val = Number(e.target.value);
-      data.forEach(d => d.value = val);
+  data.forEach((d, i) => {
+    if (!isEditable(i)) return;
+    const inputEl = revInputs[i];
+    if (!inputEl) return;
+    inputEl.addEventListener('input', (e) => {
+      const typed = Number(e.target.value);
+      const val = revenueUnit === 'm' ? typed * 1000 : typed;
+      data[i].value = val;
       update();
     });
-  }
+  });
 
   function xForIndex(i) { return plot.left + i * xStep; }
   function yForValue(value) {
@@ -499,13 +556,21 @@ function createScenarioChart({ svgId, summaryId, title, series, onUpdate }) {
   function renderYAxis() {
     yLabelsGroup.innerHTML = '';
     gridGroup.innerHTML = '';
-    const step = (maxRevenue - minRevenue) / 10;
-    for (let i = 0; i <= 10; i++) {
-      const tick = minRevenue + step * i;
+    const ticks = computeNiceTicks(minRevenue, maxRevenue, 10);
+    let maxLabelWidth = 0;
+    ticks.forEach(tick => {
       const y = yForValue(tick);
       make('line', { x1: plot.left, y1: y, x2: plot.right, y2: y, class: 'grid-line' }, gridGroup);
       const label = make('text', { x: plot.left - 12, y: y + 4, 'text-anchor': 'end', class: 'label' }, yLabelsGroup);
-      label.textContent = '£' + Math.round(tick) + 'k';
+      label.textContent = formatRevenueDisplay(tick);
+      maxLabelWidth = Math.max(maxLabelWidth, label.getComputedTextLength());
+    });
+    if (yAxisTitle) {
+      const titleGap = 14;
+      const leftEdge = (plot.left - 12) - maxLabelWidth;
+      const titleX = Math.max(10, Math.min(20, Math.round(leftEdge - titleGap)));
+      yAxisTitle.setAttribute('x', titleX);
+      yAxisTitle.setAttribute('transform', `rotate(-90 ${titleX} 164)`);
     }
   }
 
@@ -525,16 +590,15 @@ function createScenarioChart({ svgId, summaryId, title, series, onUpdate }) {
       cx: x,
       cy: yForValue(d.value),
       r: 8.5,
-      class: 'point',
+      class: i === 0 ? 'point point-fixed' : 'point',
       tabindex: '0',
-      'aria-label': `Drag ${title} ${d.label} revenue`
+      'aria-label': i === 0 ? `${title} ${d.label} revenue (set via the field above the chart)` : `Drag ${title} ${d.label} revenue`
     }, g);
     point.dataset.index = i;
     pointElements.push(point);
     tagElements.push({ group: tag, rect, text });
   });
 
-  function formatRevenue(v) { return '£' + Math.round(v * 1000).toLocaleString(); }
 
   function update() {
     renderYAxis();
@@ -550,20 +614,19 @@ function createScenarioChart({ svgId, summaryId, title, series, onUpdate }) {
       pointElements[i].setAttribute('cy', y);
       const tag = tagElements[i];
       tag.group.setAttribute('transform', `translate(0, ${y - 38})`);
-      tag.text.textContent = formatRevenue(d.value);
+      tag.text.textContent = formatRevenueDisplay(d.value);
       const width = Math.max(64, tag.text.getComputedTextLength() + 22);
+      const tagLeft = Math.max(plot.left + 6, x - width / 2);
       tag.rect.setAttribute('width', width);
-      tag.rect.setAttribute('x', x - width / 2);
-      tag.text.setAttribute('x', x);
+      tag.rect.setAttribute('x', tagLeft);
+      tag.text.setAttribute('x', tagLeft + width / 2);
     });
 
     data.forEach((d, i) => {
-      if (i === 0 && !isChart2) {
-        if (document.activeElement !== revInputs[0]) {
-          revInputs[0].value = Math.round(d.value);
+      if (isEditable(i)) {
+        if (document.activeElement !== revInputs[i]) {
+          revInputs[i].value = revenueUnit === 'm' ? Math.round((d.value / 1000) * 100) / 100 : Math.round(d.value);
         }
-      } else {
-        revInputs[i].textContent = formatRevenue(d.value);
         if (i > 0) {
           const prevValue = data[i - 1].value;
           const growth = prevValue ? ((d.value - prevValue) / prevValue) * 100 : 0;
@@ -574,6 +637,8 @@ function createScenarioChart({ svgId, summaryId, title, series, onUpdate }) {
             yoyEl.style.color = growth < 0 ? '#d9534f' : 'var(--accent)';
           }
         }
+      } else {
+        revInputs[i].textContent = formatRevenueDisplay(d.value);
       }
     });
 
@@ -583,18 +648,14 @@ function createScenarioChart({ svgId, summaryId, title, series, onUpdate }) {
   let activeIndex = null;
   function startDrag(event) {
     const target = event.target.closest('.point');
-    if (!target) return;
+    if (!target || target.classList.contains('point-fixed')) return;
     activeIndex = Number(target.dataset.index);
     target.classList.add('active');
   }
   function moveDrag(event) {
     if (activeIndex === null) return;
     const val = valueForY(pointerY(event));
-    if (activeIndex === 0) {
-      data.forEach(d => d.value = val);
-    } else {
-      data[activeIndex].value = val;
-    }
+    data[activeIndex].value = val;
     update();
   }
   function endDrag() {

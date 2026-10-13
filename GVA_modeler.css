@@ -209,6 +209,17 @@ svg {
   fill: #dff2ef;
 }
 
+.point.point-fixed {
+  cursor: default;
+  fill: var(--border);
+  stroke: var(--muted);
+}
+
+.point.point-fixed:hover {
+  r: 8.5;
+  fill: var(--border);
+}
+
 .label {
   font-size: 13px;
   fill: var(--muted);
@@ -573,6 +584,47 @@ table.summary-table {
   color: var(--accent);
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.unit-toggle {
+  display: inline-flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.unit-toggle-btn {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.unit-toggle-btn:hover {
+  color: var(--accent);
+}
+
+.unit-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+input.no-spinner::-webkit-outer-spin-button,
+input.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input.no-spinner[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .preset-btn:hover {
