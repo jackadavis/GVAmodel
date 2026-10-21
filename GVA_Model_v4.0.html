@@ -55,6 +55,7 @@
           <label class="model-detail" for="model-version">Version <input type="text" id="model-version" value="1.0" maxlength="12" style="width: 52px;"></label>
         </div>
         <div class="header-actions">
+          <button type="button" class="what-if-btn" id="what-if-btn" aria-pressed="false" title="Try changes without losing the current figures. Accept keeps them; Discard puts everything back.">What-if</button>
           <div class="unit-toggle" role="group" aria-label="Side panel" title="Click the highlighted option again to hide the panel">
             <button type="button" class="unit-toggle-btn active" id="panel-toggle-summary" onclick="selectSidePanel('summary')">Summary Metrics</button>
             <button type="button" class="unit-toggle-btn" id="panel-toggle-comparison" onclick="selectSidePanel('comparison')">Comparison Metrics</button>
@@ -82,6 +83,14 @@
           <input type="file" id="import-file-input" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display: none;">
         </div>
       </header>
+
+      <div class="what-if-bar" id="what-if-bar" role="status" hidden>
+        <span><strong>What-if mode:</strong> change anything you like. Accept to keep the changes, or Discard to go back to the figures from before the what-if.</span>
+        <span class="what-if-actions">
+          <button type="button" class="what-if-accept" id="what-if-accept">&#10003; Accept</button>
+          <button type="button" class="what-if-discard" id="what-if-discard">&#10007; Discard</button>
+        </span>
+      </div>
 
       <div class="layout-wrapper">
         <div class="main-content">

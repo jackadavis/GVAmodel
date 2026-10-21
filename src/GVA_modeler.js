@@ -109,6 +109,9 @@ async function handleLogin(event) {
 function handleLogout() {
   sessionStorage.removeItem('gva_auth');
   sessionStorage.removeItem('gva_key');
+  // Drop any open what-if snapshot along with the session
+  whatIfSnapshot = null;
+  setWhatIfMode(false);
 
   // Reset input fields in login form
   document.getElementById('login-username').value = '';
@@ -1614,6 +1617,68 @@ async function handleImportChange(e) {
   input.value = '';
 }
 
+/// What-if: a snapshot of every input is held in memory (never in browser storage) while a what-if
+/// is open. Accept drops the snapshot; Discard puts every input and both charts back.
+let whatIfSnapshot = null;
+
+// Every data input on the page: scenarios, baseline, depreciation, comparison table and popups
+function whatIfFields() {
+  return Array.from(document.querySelectorAll('input, textarea, select'))
+    .filter(f => f.id && !LOGIN_FIELD_IDS.includes(f.id) && f.type !== 'file');
+}
+
+function takeWhatIfSnapshot() {
+  return {
+    fields: whatIfFields().map(f => ({ id: f.id, value: f.value, checked: f.checked })),
+    revenues: { s1: scenario1.getData().map(d => d.value), s2: scenario2.getData().map(d => d.value) },
+    baselineNetProfitK
+  };
+}
+
+function restoreWhatIfSnapshot(snap) {
+  snap.fields.forEach(({ id, value, checked }) => {
+    const f = document.getElementById(id);
+    if (!f) return;
+    if (f.type === 'checkbox' || f.type === 'radio') f.checked = checked;
+    else f.value = value;
+  });
+  baselineNetProfitK = snap.baselineNetProfitK;
+  scenario1.setValues(snap.revenues.s1);
+  scenario2.setValues(snap.revenues.s2);
+  syncChartScales(snap.revenues.s1[0]);
+  recalcAll();
+  updateSummaryTable();
+  updateComparisonCalculations();
+}
+
+function setWhatIfMode(active) {
+  document.body.classList.toggle('what-if-active', active);
+  const bar = document.getElementById('what-if-bar');
+  if (bar) bar.hidden = !active;
+  const btn = document.getElementById('what-if-btn');
+  if (btn) {
+    btn.disabled = active;
+    btn.setAttribute('aria-pressed', String(active));
+  }
+}
+
+function startWhatIf() {
+  if (whatIfSnapshot) return;
+  whatIfSnapshot = takeWhatIfSnapshot();
+  setWhatIfMode(true);
+}
+
+function acceptWhatIf() {
+  whatIfSnapshot = null;
+  setWhatIfMode(false);
+}
+
+function discardWhatIf() {
+  if (whatIfSnapshot) restoreWhatIfSnapshot(whatIfSnapshot);
+  whatIfSnapshot = null;
+  setWhatIfMode(false);
+}
+
 const LOGIN_FIELD_IDS = ['login-username', 'login-password'];
 
 // Browsers restore typed values on reload before scripts run; reset to the HTML defaults so no data carries over
@@ -1705,6 +1770,10 @@ function initializeDashboard() {
   document.getElementById('export-btn').addEventListener('click', handleExport);
   document.getElementById('import-btn').addEventListener('click', handleImportClick);
   document.getElementById('import-file-input').addEventListener('change', handleImportChange);
+
+  document.getElementById('what-if-btn')?.addEventListener('click', startWhatIf);
+  document.getElementById('what-if-accept')?.addEventListener('click', acceptWhatIf);
+  document.getElementById('what-if-discard')?.addEventListener('click', discardWhatIf);
 
   // Bind Modal
   document.getElementById('modal-apply-btn').addEventListener('click', handleApplyBaseline);

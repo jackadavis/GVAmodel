@@ -79,6 +79,88 @@ body {
   gap: 4px;
 }
 
+/* What-if: header button, the strip under the header, and an outline on the cards while it is open */
+.what-if-btn {
+  border: 1px solid var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 99px;
+  cursor: pointer;
+}
+
+.what-if-btn:hover:not(:disabled) {
+  background: var(--line-soft);
+}
+
+.what-if-btn:disabled {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: #fff;
+  cursor: default;
+}
+
+.what-if-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: -12px 0 20px;
+  padding: 10px 16px;
+  border: 1px solid #c4b5fd;
+  background: #f5f3ff;
+  color: #4c1d95;
+  border-radius: 10px;
+  font-size: 0.88rem;
+}
+
+.what-if-bar[hidden] {
+  display: none;
+}
+
+.what-if-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.what-if-accept,
+.what-if-discard {
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  color: #fff;
+}
+
+.what-if-accept {
+  background: #15803d;
+}
+
+.what-if-accept:hover {
+  background: #166534;
+}
+
+.what-if-discard {
+  background: #b91c1c;
+}
+
+.what-if-discard:hover {
+  background: #991b1b;
+}
+
+.what-if-active .card,
+.what-if-active .side-panel {
+  outline: 2px dashed #a78bfa;
+  outline-offset: 2px;
+}
+
 /* Local copy: the sign-in box and Sign Out are never shown */
 .password-free .login-overlay,
 .password-free #sign-out-btn,
