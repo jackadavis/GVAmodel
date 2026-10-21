@@ -25,10 +25,17 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      # Publish only the app: the HTML file becomes index.html so the site's home address loads it
+      - name: Build site
+        run: |
+          mkdir _site
+          cp GVA_Model_v4.0.html _site/index.html
+          cp -r src _site/src
+          rm -rf "_site/src/tools" "_site/src/GVA Model Template.xlsx"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: '_site'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

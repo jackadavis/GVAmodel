@@ -4,16 +4,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GVA Scenario Modeler v3.1</title>
-  <link rel="stylesheet" href="GVA_modeler.css">
+  <title>GVA Calculator</title>
+  <link rel="stylesheet" href="src/GVA_modeler.css">
+  <script>
+    // Opened as GVA_Model_v4.0.html (the local copy): no sign-in. Runs before the page is drawn so the
+    // sign-in box never shows. The website publishes this page as index.html, which keeps the sign-in.
+    if (/GVA_Model_v[\d.]+\.html$/i.test(decodeURIComponent(location.pathname))) {
+      document.documentElement.classList.add('password-free');
+    }
+  </script>
 </head>
 
 <body>
+  <div class="notice-banner" role="note">No data is saved in this calculator. You will need to export your GVA table to access the data after you close this page.</div>
+
   <!-- Login Screen -->
   <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
-      <h2>GVA Scenario Modeler</h2>
-      <p>Please enter your credentials to access the scenario modeler.</p>
+      <h2>GVA Calculator</h2>
+      <p>Please enter your credentials to access the calculator.</p>
       
       <div id="loginError" class="login-error">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -36,24 +45,41 @@
 
   <div id="app-root">
     <main class="page" id="app-main" style="display: none;">
-      <header class="app-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
-        <div>
-          <h1>GVA Scenario Modeler <span class="badge">v3.1</span> <button class="info-btn" id="info-btn" onclick="showInfoModal()" aria-label="Show basic usage info" title="Show basic usage info"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button></h1>
+      <header class="app-header">
+        <div class="header-title">
+          <img class="header-logo" src="src/logo.png" alt="WMG, The University of Warwick">
+          <h1>GVA Calculator <span class="badge" id="app-version-badge"></span> <button class="info-btn" id="info-btn" onclick="showInfoModal()" aria-label="Show basic usage info" title="Show basic usage info"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button></h1>
         </div>
-        <div class="header-actions" style="display: flex; gap: 12px; align-items: center; margin-top: 6px; margin-left: auto;">
-          <div class="unit-toggle" role="group" aria-label="Revenue display units">
-            <button type="button" class="unit-toggle-btn active" id="unit-toggle-k" onclick="setRevenueUnit('k')">£k</button>
-            <button type="button" class="unit-toggle-btn" id="unit-toggle-m" onclick="setRevenueUnit('m')">£m</button>
+        <div class="header-details">
+          <label class="model-detail" for="model-company"><input type="text" id="model-company" placeholder="Company name" aria-label="Company name" maxlength="80"></label>
+          <label class="model-detail" for="model-version">Version <input type="text" id="model-version" value="1.0" maxlength="12" style="width: 52px;"></label>
+        </div>
+        <div class="header-actions">
+          <div class="unit-toggle" role="group" aria-label="Side panel" title="Click the highlighted option again to hide the panel">
+            <button type="button" class="unit-toggle-btn active" id="panel-toggle-summary" onclick="selectSidePanel('summary')">Summary Metrics</button>
+            <button type="button" class="unit-toggle-btn" id="panel-toggle-comparison" onclick="selectSidePanel('comparison')">Comparison Metrics</button>
           </div>
-          <button class="menu-toggle-btn active" id="menu-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle Summary Metrics">
-            <span class="hamburger-icon">
-              <span></span>
-              <span></span>
-              <span></span>
-            </span>
-            <span class="btn-text">Summary Metrics</span>
-          </button>
-          <button class="sign-out-btn" id="sign-out-btn" onclick="handleLogout()" style="margin-top: 0;">Sign Out</button>
+          <div class="settings-menu" id="settings-menu">
+            <button type="button" class="settings-menu-btn" id="settings-menu-btn" onclick="toggleSettingsMenu()" aria-label="Settings" aria-haspopup="menu" aria-expanded="false" aria-controls="settings-menu-list" title="Settings">
+              <span class="settings-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+            </button>
+            <div class="settings-menu-list" id="settings-menu-list" role="menu" hidden>
+              <div class="settings-menu-row">
+                <span>Revenue units</span>
+                <div class="unit-toggle" role="group" aria-label="Revenue display units">
+                  <button type="button" class="unit-toggle-btn" id="unit-toggle-k" onclick="setRevenueUnit('k')">£k</button>
+                  <button type="button" class="unit-toggle-btn active" id="unit-toggle-m" onclick="setRevenueUnit('m')">£m</button>
+                </div>
+              </div>
+              <div class="settings-menu-divider" role="separator"></div>
+              <button type="button" role="menuitem" id="edit-baseline-btn">Edit Baseline</button>
+              <button type="button" role="menuitem" id="import-btn">Import</button>
+              <button type="button" role="menuitem" id="export-btn">Export</button>
+              <div class="settings-menu-divider" role="separator" id="sign-out-divider"></div>
+              <button type="button" role="menuitem" id="sign-out-btn" class="settings-menu-danger" onclick="handleLogout()">Sign Out</button>
+            </div>
+          </div>
+          <input type="file" id="import-file-input" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display: none;">
         </div>
       </header>
 
@@ -62,7 +88,7 @@
           <section class="grid-layout">
             <!-- Scenario 1: Without Grant -->
             <article class="card">
-              <h2>Scenario 1 Without Grant</h2>
+              <h2>Scenario 1: Without Grant</h2>
               <div class="preset-btns">
                 <span class="preset-label">YoY Growth Presets:</span>
                 <button class="preset-btn" onclick="applyYoYGrowth('s1', -1)" title="Loss Making">-1%</button>
@@ -76,30 +102,45 @@
               </div>
 
               <div class="chart-shell">
-                <svg id="chart1" viewBox="0 0 620 358" aria-label="Scenario 1 draggable revenue graph" role="img"></svg>
+                <svg id="chart1" viewBox="0 0 620 223" aria-label="Scenario 1 draggable revenue graph" role="img"></svg>
               </div>
 
               <div class="legend" id="summary1"></div>
 
               <div class="people-box">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                  <div class="people-title" style="margin: 0;">Employees and cost (Scenario 1)</div>
-                  <div style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; color: var(--muted);">
-                    <input type="checkbox" id="payroll-adj-toggle-s1" style="cursor: pointer; accent-color: var(--accent); width: 15px; height: 15px;">
-                    <label for="payroll-adj-toggle-s1" style="cursor: pointer; user-select: none;">Apply payroll adjustment</label>
+                  <div class="people-title" style="margin: 0;">Employees and cost</div>
+                  <div class="people-metric" id="emp1-metric" style="margin: 0; margin-left: auto; text-align: right;">Average cost per employee: –</div>
+                </div>
+                <div class="nl-saving" title="Turnover per employee for each year, as a % change vs baseline. Headcount is the nearest whole number of people to this target. With manual headcount ticked, the boxes show the productivity the entered headcount gives.">
+                  <div class="nl-saving-label">Productivity target (% vs baseline)</div>
+                  <div class="nl-saving-years">
+                    <label class="nl-saving-year" for="s1-productivity-y1">
+                      <span class="nl-saving-yr lbl-yr-1">Y1</span>
+                      <span class="nl-saving-input"><input id="s1-productivity-y1" class="story-input no-spinner" type="number" step="0.1" value="0"><span>%</span></span>
+                    </label>
+                    <label class="nl-saving-year" for="s1-productivity-y2">
+                      <span class="nl-saving-yr lbl-yr-2">Y2</span>
+                      <span class="nl-saving-input"><input id="s1-productivity-y2" class="story-input no-spinner" type="number" step="0.1" value="0"><span>%</span></span>
+                    </label>
+                    <label class="nl-saving-year" for="s1-productivity-y3">
+                      <span class="nl-saving-yr lbl-yr-3">Y3</span>
+                      <span class="nl-saving-input"><input id="s1-productivity-y3" class="story-input no-spinner" type="number" step="0.1" value="0"><span>%</span></span>
+                    </label>
                   </div>
                 </div>
                 <div class="people-inputs">
                   <div class="people-row people-baseline-row">
                     <div class="field">
                       <label for="emp1-baseline">Baseline employees count</label>
-                      <input id="emp1-baseline" type="number" min="1" step="1" value="50">
+                      <input id="emp1-baseline" class="no-spinner" type="number" min="1" step="1" value="50">
                     </div>
                     <div class="field">
-                      <label for="emp1-cost">Baseline cost all employees (£k)</label>
-                      <input id="emp1-cost" type="number" min="0" step="1" value="1500">
+                      <label for="emp1-cost">Baseline cost all employees (£)</label>
+                      <input id="emp1-cost" type="text" inputmode="numeric" value="1,500,000">
                     </div>
                   </div>
+                  <label class="story-toggle headcount-toggle" title="Enter headcount for each year yourself instead of calculating it from the productivity target"><input type="checkbox" id="s1-manual-headcount"> Manual headcount</label>
                   <div class="people-row people-years-row">
                     <div class="field">
                       <label for="emp1-y1"><span class="lbl-yr-1">Y1</span> employees</label>
@@ -115,28 +156,58 @@
                     </div>
                   </div>
                 </div>
-                <div class="people-metric" id="emp1-metric">Average cost per employee: – | Annual employee cost by year: –
-                </div>
               </div>
 
               <div class="profit-box">
                 <div
                   style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
-                  <h3 style="margin: 0;">Net profit sliders</h3>
-                  <div class="preset-btns" style="margin-bottom: 0;">
-                    <span class="preset-label">Margin Presets:</span>
-                    <button class="preset-btn" onclick="applyProfitPreset('s1', -1)">-1% Trend</button>
-                    <button class="preset-btn" onclick="applyProfitPreset('s1', 0)">Stable</button>
-                    <button class="preset-btn" onclick="applyProfitPreset('s1', 1)">+1% Trend</button>
+                  <h3 style="margin: 0;">Net profit</h3>
+                </div>
+                <div class="nl-saving" title="Fall in non-labour costs (materials, plant hire and indirect costs) as a share of turnover, compared with the baseline year. 1 = one percentage point of that year's turnover. A negative value is a cost increase (e.g. material prices).">
+                  <div class="nl-saving-label">Non-labour cost saving (% points of turnover)</div>
+                  <div class="nl-saving-years">
+                    <label class="nl-saving-year" for="s1-nonlabour-y1">
+                      <span class="nl-saving-yr lbl-yr-1">Y1</span>
+                      <span class="nl-saving-input"><input id="s1-nonlabour-y1" class="story-input no-spinner" type="number" step="0.1" value="0"><span>%</span></span>
+                      <span class="nl-saving-gbp" id="s1-nonlabour-gbp-y1" aria-live="polite">£0</span>
+                    </label>
+                    <label class="nl-saving-year" for="s1-nonlabour-y2">
+                      <span class="nl-saving-yr lbl-yr-2">Y2</span>
+                      <span class="nl-saving-input"><input id="s1-nonlabour-y2" class="story-input no-spinner" type="number" step="0.1" value="0"><span>%</span></span>
+                      <span class="nl-saving-gbp" id="s1-nonlabour-gbp-y2" aria-live="polite">£0</span>
+                    </label>
+                    <label class="nl-saving-year" for="s1-nonlabour-y3">
+                      <span class="nl-saving-yr lbl-yr-3">Y3</span>
+                      <span class="nl-saving-input"><input id="s1-nonlabour-y3" class="story-input no-spinner" type="number" step="0.1" value="0"><span>%</span></span>
+                      <span class="nl-saving-gbp" id="s1-nonlabour-gbp-y3" aria-live="polite">£0</span>
+                    </label>
                   </div>
                 </div>
                 <div class="profit-grid" id="profitGrid1"></div>
+              </div>
+
+              <div class="people-box" id="depreciation-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                  <div class="people-title" style="margin: 0;">Depreciation</div>
+                </div>
+                <div class="people-inputs">
+                  <div class="people-row people-baseline-row">
+                    <div class="field">
+                      <label for="dep-baseline" title="Annual depreciation; the same figure is used for the baseline and Years 1-3 in both scenarios">Baseline depreciation (£)</label>
+                      <input id="dep-baseline" type="text" inputmode="numeric" autocomplete="off" value="0">
+                    </div>
+                    <div class="field">
+                      <label for="project-cost-input" title="Depreciated over 3 years (1/3 per year) in the with-grant scenario">Project cost (£)</label>
+                      <input id="project-cost-input" type="text" inputmode="numeric" autocomplete="off" value="0">
+                    </div>
+                  </div>
+                </div>
               </div>
             </article>
 
             <!-- Scenario 2: With Grant -->
             <article class="card">
-              <h2>Scenario 2 With Grant</h2>
+              <h2>Scenario 2: With Grant</h2>
               <div class="preset-btns">
                 <span class="preset-label">YoY Growth Presets:</span>
                 <button class="preset-btn" onclick="applyYoYGrowth('s2', 0)" title="Flat Line">0%</button>
@@ -150,31 +221,45 @@
               </div>
 
               <div class="chart-shell">
-                <svg id="chart2" viewBox="0 0 620 358" aria-label="Scenario 2 draggable revenue graph" role="img"></svg>
+                <svg id="chart2" viewBox="0 0 620 223" aria-label="Scenario 2 draggable revenue graph" role="img"></svg>
               </div>
 
               <div class="legend" id="summary2"></div>
 
-              <div class="people-box" style="display: block; width: 100%;">
+              <div class="people-box">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                  <div class="people-title" style="margin: 0;">Employees and cost (Scenario 2)</div>
-                  <div style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; color: var(--muted);">
-                    <input type="checkbox" id="payroll-adj-toggle-s2" style="cursor: pointer; accent-color: var(--accent); width: 15px; height: 15px;">
-                    <label for="payroll-adj-toggle-s2" style="cursor: pointer; user-select: none;">Apply payroll adjustment</label>
+                  <div class="people-title" style="margin: 0;">Employees and cost</div>
+                </div>
+                <div class="nl-saving" title="Turnover per employee for each year, as a % change vs baseline. Headcount is the nearest whole number of people to this target. With manual headcount ticked, the boxes show the productivity the entered headcount gives.">
+                  <div class="nl-saving-label">Productivity target (% vs baseline)</div>
+                  <div class="nl-saving-years">
+                    <label class="nl-saving-year" for="s2-productivity-y1">
+                      <span class="nl-saving-yr lbl-yr-1">Y1</span>
+                      <span class="nl-saving-input"><input id="s2-productivity-y1" class="story-input no-spinner" type="number" step="0.1" value="0"><span>%</span></span>
+                    </label>
+                    <label class="nl-saving-year" for="s2-productivity-y2">
+                      <span class="nl-saving-yr lbl-yr-2">Y2</span>
+                      <span class="nl-saving-input"><input id="s2-productivity-y2" class="story-input no-spinner" type="number" step="0.1" value="4"><span>%</span></span>
+                    </label>
+                    <label class="nl-saving-year" for="s2-productivity-y3">
+                      <span class="nl-saving-yr lbl-yr-3">Y3</span>
+                      <span class="nl-saving-input"><input id="s2-productivity-y3" class="story-input no-spinner" type="number" step="0.1" value="10"><span>%</span></span>
+                    </label>
                   </div>
                 </div>
-
-                <div class="people-inputs" style="margin-bottom: 16px;">
-                  <div class="people-row people-baseline-row">
+                <div class="people-inputs">
+                  <!-- Scenario 2 baseline mirrors Scenario 1: hidden, but keeps its space so both cards line up -->
+                  <div class="people-row people-baseline-row people-row-placeholder" aria-hidden="true">
                     <div class="field">
                       <label for="emp2-baseline">Baseline employees count</label>
-                      <input id="emp2-baseline" type="number" min="1" step="1" value="50" disabled style="background: #fafaf9; border-color: transparent;">
+                      <input id="emp2-baseline" class="no-spinner" type="number" min="1" step="1" value="50" disabled style="background: #fafaf9; border-color: transparent;">
                     </div>
                     <div class="field">
-                      <label for="emp2-cost">Total salary cost (£k)</label>
-                      <input id="emp2-cost" type="number" min="0" step="1" value="1500" disabled style="background: #fafaf9; border-color: transparent;">
+                      <label for="emp2-cost">Total salary cost (£)</label>
+                      <input id="emp2-cost" type="text" value="1,500,000" disabled style="background: #fafaf9; border-color: transparent;">
                     </div>
                   </div>
+                  <label class="story-toggle headcount-toggle" title="Enter headcount for each year yourself instead of calculating it from the productivity target"><input type="checkbox" id="s2-manual-headcount"> Manual headcount</label>
                   <div class="people-row people-years-row">
                     <div class="field">
                       <label for="emp2-y1"><span class="lbl-yr-1">Y1</span> employees</label>
@@ -188,6 +273,45 @@
                       <label for="emp2-y3"><span class="lbl-yr-3">Y3</span> employees</label>
                       <input id="emp2-y3" type="number" min="0" step="1" value="65">
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="profit-box">
+                <div
+                  style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                  <h3 style="margin: 0;">Net profit</h3>
+                </div>
+                <div class="nl-saving" title="Fall in non-labour costs (materials, plant hire and indirect costs) as a share of turnover, compared with the baseline year. 1 = one percentage point of that year's turnover. A negative value is a cost increase (e.g. material prices).">
+                  <div class="nl-saving-label">Non-labour cost saving (% points of turnover)</div>
+                  <div class="nl-saving-years">
+                    <label class="nl-saving-year" for="s2-nonlabour-y1">
+                      <span class="nl-saving-yr lbl-yr-1">Y1</span>
+                      <span class="nl-saving-input"><input id="s2-nonlabour-y1" class="story-input no-spinner" type="number" step="0.1" value="0"><span>%</span></span>
+                      <span class="nl-saving-gbp" id="s2-nonlabour-gbp-y1" aria-live="polite">£0</span>
+                    </label>
+                    <label class="nl-saving-year" for="s2-nonlabour-y2">
+                      <span class="nl-saving-yr lbl-yr-2">Y2</span>
+                      <span class="nl-saving-input"><input id="s2-nonlabour-y2" class="story-input no-spinner" type="number" step="0.1" value="0"><span>%</span></span>
+                      <span class="nl-saving-gbp" id="s2-nonlabour-gbp-y2" aria-live="polite">£0</span>
+                    </label>
+                    <label class="nl-saving-year" for="s2-nonlabour-y3">
+                      <span class="nl-saving-yr lbl-yr-3">Y3</span>
+                      <span class="nl-saving-input"><input id="s2-nonlabour-y3" class="story-input no-spinner" type="number" step="0.1" value="0"><span>%</span></span>
+                      <span class="nl-saving-gbp" id="s2-nonlabour-gbp-y3" aria-live="polite">£0</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="profit-grid" id="profitGrid2"></div>
+              </div>
+
+              <!-- Job creation, upskilling and salary bands: to be implemented once the model has been validated
+              <div class="people-box" id="s2-jobs-panel" style="display: block; width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                  <div class="people-title" style="margin: 0;">Job creation, upskilling and salary bands</div>
+                  <div class="unit-toggle" role="group" aria-label="Scenario 2 salary cost method">
+                    <button type="button" class="unit-toggle-btn active" id="s2-cost-mode-average" onclick="setS2CostMode('average')" title="Cost every employee at the baseline average salary">Average cost</button>
+                    <button type="button" class="unit-toggle-btn" id="s2-cost-mode-bands" onclick="setS2CostMode('bands')" title="Cost new jobs by salary band">Salary bands</button>
                   </div>
                 </div>
 
@@ -232,7 +356,8 @@
 
                 <div style="font-weight: 600; font-size: 0.88rem; color: var(--text); margin-top: 16px;">Salary Bands of
                   New Jobs Created/Saved</div>
-                <table class="bands-table">
+                <div class="bands-mode-note" id="bands-mode-note">Payroll uses the baseline average salary. Switch to <strong>Salary bands</strong> to cost new jobs by band.</div>
+                <table class="bands-table" id="bands-table">
                   <thead>
                     <tr>
                       <th>Salary Band</th>
@@ -300,102 +425,91 @@
                     </tr>
                   </tbody>
                 </table>
-
-                <div class="people-metric" id="emp2-metric"
-                  style="margin-top: 14px; padding: 12px; background: #fafaf9; border-radius: 8px; border: 1px solid var(--border); line-height: 1.4;">
-                  Headcount: Base 50, Y1: 55, Y2: 60, Y3: 65
-                </div>
               </div>
-
-              <div class="profit-box">
-                <div
-                  style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
-                  <h3 style="margin: 0;">Net profit sliders</h3>
-                  <div class="preset-btns" style="margin-bottom: 0;">
-                    <span class="preset-label">Margin Presets:</span>
-                    <button class="preset-btn" onclick="applyProfitPreset('s2', -1)">-1% Trend</button>
-                    <button class="preset-btn" onclick="applyProfitPreset('s2', 0)">Stable</button>
-                    <button class="preset-btn" onclick="applyProfitPreset('s2', 1)">+1% Trend</button>
-                  </div>
-                </div>
-                <div class="profit-grid" id="profitGrid2"></div>
-              </div>
+              -->
             </article>
           </section>
         </div>
 
         <!-- Right Summary Panel -->
         <aside class="sidebar">
-          <section class="summary-section" style="margin-top: 0;">
-            <div
-              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap;">
-              <h2 style="margin: 0; font-size: 1rem;">Summary metrics</h2>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <button id="edit-baseline-btn" class="preset-btn" style="margin-bottom: 0;">Edit Baseline</button>
-                <button id="import-btn" class="preset-btn" style="margin-bottom: 0;">Import</button>
-                <button id="export-btn"
-                  style="background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem; transition: opacity 0.2s;">Export</button>
-                <input type="file" id="import-file-input" accept=".csv" style="display: none;">
-              </div>
-            </div>
+          <section class="summary-section side-panel" id="side-panel-summary" style="margin-top: 0;">
+            <h2 style="margin: 0 0 12px 0; font-size: 1rem;">Summary metrics</h2>
 
-            <table class="summary-table" id="summaryTable">
+            <table class="summary-table" id="summaryTableS1">
               <tbody>
-                <tr>
-                  <td>Scenario 1</td>
-                  <td>Base</td>
+                <tr class="summary-header">
+                  <td>S1: No Grant</td>
+                  <td>Baseline</td>
                   <td class="col-yr-1">Y1</td>
                   <td class="col-yr-2">Y2</td>
                   <td class="col-yr-3">Y3</td>
                 </tr>
                 <tr>
-                  <td>Annual employee cost</td>
+                  <td>Total salary / wage costs</td>
                   <td id="s1-emp-baseline">–</td>
                   <td id="s1-emp-y1">–</td>
                   <td id="s1-emp-y2">–</td>
                   <td id="s1-emp-y3">–</td>
                 </tr>
                 <tr>
-                  <td>Net profit value</td>
+                  <td>Pre-tax profits</td>
                   <td id="s1-prof-baseline">–</td>
                   <td id="s1-prof-y1">–</td>
                   <td id="s1-prof-y2">–</td>
                   <td id="s1-prof-y3">–</td>
                 </tr>
                 <tr>
-                  <td>Scenario 2</td>
-                  <td>Base</td>
+                  <td>Depreciation</td>
+                  <td id="s1-dep-baseline">–</td>
+                  <td id="s1-dep-y1">–</td>
+                  <td id="s1-dep-y2">–</td>
+                  <td id="s1-dep-y3">–</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <table class="summary-table" id="summaryTableS2">
+              <tbody>
+                <tr class="summary-header">
+                  <td>S2: With Grant</td>
+                  <td>Baseline</td>
                   <td class="col-yr-1">Y1</td>
                   <td class="col-yr-2">Y2</td>
                   <td class="col-yr-3">Y3</td>
                 </tr>
                 <tr>
-                  <td>Annual employee cost</td>
+                  <td>Total salary / wage costs</td>
                   <td id="s2-emp-baseline">–</td>
                   <td id="s2-emp-y1">–</td>
                   <td id="s2-emp-y2">–</td>
                   <td id="s2-emp-y3">–</td>
                 </tr>
                 <tr>
-                  <td>Net profit value</td>
+                  <td>Pre-tax profits</td>
                   <td id="s2-prof-baseline">–</td>
                   <td id="s2-prof-y1">–</td>
                   <td id="s2-prof-y2">–</td>
                   <td id="s2-prof-y3">–</td>
                 </tr>
                 <tr>
+                  <td>Depreciation</td>
+                  <td id="s2-dep-baseline">–</td>
+                  <td id="s2-dep-y1">–</td>
+                  <td id="s2-dep-y2">–</td>
+                  <td id="s2-dep-y3">–</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <table class="summary-table" id="summaryTableGva">
+              <tbody>
+                <tr>
                   <td>GVA (S2 − S1)</td>
                   <td id="gva-baseline">–</td>
                   <td id="gva-y1">–</td>
                   <td id="gva-y2">–</td>
                   <td id="gva-y3">–</td>
-                </tr>
-                <tr>
-                  <td>Project cost (£k)</td>
-                  <td colspan="4" style="text-align: right;">
-                    <input type="number" id="project-cost-input" value="0"
-                      style="width: 80px; text-align: right; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font: inherit;">
-                  </td>
                 </tr>
                 <tr style="background: var(--line-soft); font-size: 1.1rem; border-top: 2px solid var(--border);">
                   <td style="font-weight: 600; padding: 12px 8px;">Total GVA</td>
@@ -405,73 +519,70 @@
             </table>
           </section>
 
-          <!-- Scenario 2 Productivity Gain Sidebar Section -->
-          <section class="summary-section" style="margin-top: 20px;">
-            <h2 style="margin: 0 0 12px 0; font-size: 1rem;">Productivity gain with respect to baseline (Scenario 2)</h2>
-            <div id="s2-productivity-gain-sidebar" style="padding: 12px; background: #fafaf9; border-radius: 8px; border: 1px solid var(--border); font-size: 0.88rem; line-height: 1.5; color: var(--text);">
-              –
-            </div>
-          </section>
+          <section class="summary-section side-panel" id="side-panel-comparison" style="margin-top: 0;" hidden>
+            <h2 style="margin: 0 0 12px 0; font-size: 1rem;">Comparison metrics (prices in k)</h2>
 
-          <section class="summary-section" style="margin-top: 20px;">
-            <div class="section-header" onclick="toggleComparisonSection()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; margin-bottom: 12px;">
-              <h2 style="margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
-                <span id="comparison-collapse-icon" style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; font-weight: 800; font-size: 0.95rem; background: var(--line-soft); border-radius: 6px; transition: all 0.2s; color: var(--accent);">−</span>
-                Comparison metrics (prices in k)
-              </h2>
-            </div>
-
-            <div id="comparison-collapsible-content" style="transition: max-height 0.3s ease, opacity 0.25s ease; overflow: hidden; max-height: 800px;">
+            <div>
               <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap;">
                 <button id="expand-comparison-btn" class="preset-btn" style="margin-bottom: 0;" onclick="showComparisonModal()">Expand</button>
                 <button id="copy-summary-btn" class="preset-btn" style="margin-bottom: 0;" onclick="copySummaryToComparison()">Copy from Summary</button>
                 <button id="clear-comparison-btn" class="preset-btn" style="margin-bottom: 0;">Clear</button>
               </div>
 
-              <table class="summary-table" id="comparisonTable">
+              <table class="summary-table" id="comparisonTableS1">
                 <tbody>
-                  <tr>
-                    <td>Scenario 1</td>
+                  <tr class="summary-header">
+                    <td>S1: No Grant</td>
                     <td>Base</td>
                     <td class="col-yr-1">Y1</td>
                     <td class="col-yr-2">Y2</td>
                     <td class="col-yr-3">Y3</td>
                   </tr>
                   <tr>
-                    <td>Annual employee cost</td>
+                    <td>Total salary / wage costs</td>
                     <td><input type="number" class="comparison-input" id="comp-s1-emp-baseline" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s1-emp-y1" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s1-emp-y2" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s1-emp-y3" placeholder="–"></td>
                   </tr>
                   <tr>
-                    <td>Net profit value</td>
+                    <td>Pre-tax profits</td>
                     <td><input type="number" class="comparison-input" id="comp-s1-prof-baseline" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s1-prof-y1" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s1-prof-y2" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s1-prof-y3" placeholder="–"></td>
                   </tr>
-                  <tr>
-                    <td>Scenario 2</td>
+                </tbody>
+              </table>
+
+              <table class="summary-table" id="comparisonTableS2">
+                <tbody>
+                  <tr class="summary-header">
+                    <td>S2: With Grant</td>
                     <td>Base</td>
                     <td class="col-yr-1">Y1</td>
                     <td class="col-yr-2">Y2</td>
                     <td class="col-yr-3">Y3</td>
                   </tr>
                   <tr>
-                    <td>Annual employee cost</td>
+                    <td>Total salary / wage costs</td>
                     <td><input type="number" class="comparison-input" id="comp-s2-emp-baseline" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s2-emp-y1" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s2-emp-y2" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s2-emp-y3" placeholder="–"></td>
                   </tr>
                   <tr>
-                    <td>Net profit value</td>
+                    <td>Pre-tax profits</td>
                     <td><input type="number" class="comparison-input" id="comp-s2-prof-baseline" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s2-prof-y1" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s2-prof-y2" placeholder="–"></td>
                     <td><input type="number" class="comparison-input" id="comp-s2-prof-y3" placeholder="–"></td>
                   </tr>
+                </tbody>
+              </table>
+
+              <table class="summary-table" id="comparisonTableGva">
+                <tbody>
                   <tr>
                     <td>GVA (S2 − S1)</td>
                     <td><input type="number" class="comparison-input" id="comp-gva-baseline" placeholder="–"></td>
@@ -507,20 +618,28 @@
         </div>
         <div class="modal-body">
           <div class="modal-field">
-            <label for="modal-revenue">Baseline Turnover / Revenue (£k)</label>
-            <input type="number" id="modal-revenue" value="4500" min="0">
-          </div>
-          <div class="modal-field">
-            <label for="modal-profit">Baseline Net Profit Before Tax (£k)</label>
-            <input type="number" id="modal-profit" value="450" min="0">
+            <label for="modal-revenue">Baseline Turnover / Revenue (£m)</label>
+            <input type="number" id="modal-revenue" value="4.5" min="0" step="any">
           </div>
           <div class="modal-field">
             <label for="modal-emp-count">Baseline Employee Count</label>
             <input type="number" id="modal-emp-count" value="50" min="1">
           </div>
           <div class="modal-field">
-            <label for="modal-emp-cost">Total salary cost (£k)</label>
-            <input type="number" id="modal-emp-cost" value="1500" min="0">
+            <label for="modal-emp-cost">Total salary cost (£)</label>
+            <input type="text" id="modal-emp-cost" inputmode="numeric" autocomplete="off" value="1,500,000">
+          </div>
+          <div class="modal-field">
+            <label for="modal-profit">Baseline Net Profit Before Tax (£)</label>
+            <input type="text" id="modal-profit" inputmode="text" autocomplete="off" value="450,000">
+          </div>
+          <div class="modal-field">
+            <label for="modal-depreciation">Baseline Depreciation (£)</label>
+            <input type="text" id="modal-depreciation" inputmode="numeric" autocomplete="off" value="0">
+          </div>
+          <div class="modal-field">
+            <label for="modal-project-cost">Project Cost (£)</label>
+            <input type="text" id="modal-project-cost" inputmode="numeric" autocomplete="off" value="0">
           </div>
         </div>
         <div class="modal-footer">
@@ -662,36 +781,32 @@
     </div>
 
     <!-- Info Modal (Basic Usage) -->
-    <div id="infoModal" class="modal-overlay">
+    <div id="infoModal" class="modal-overlay" onclick="if (event.target === this) hideInfoModal()">
       <div class="modal-content" style="width: min(640px, 94%); max-height: 85vh; padding: 24px; overflow-y: auto;">
         <div class="modal-header" style="margin-bottom: 16px; padding-bottom: 10px;">
-          <h2 style="color: #0b4e53; font-weight: 800; font-size: 1.25rem;">GVA Scenario Modeler - Basic Usage</h2>
+          <h2 style="color: #0b4e53; font-weight: 800; font-size: 1.25rem;">GVA Calculator - Basic Usage</h2>
           <p style="color: var(--muted); font-size: 0.85rem; margin-top: 4px;">Quick guide to modeling employment, profit, and GVA scenarios.</p>
         </div>
         <div class="modal-body" style="display: grid; gap: 16px; line-height: 1.5; font-size: 0.88rem; color: var(--text);">
+          <div class="info-assumptions">
+            <h3 style="color: #0b4e53; font-size: 0.95rem; margin: 0 0 6px 0; font-weight: 700;">Calculator Assumptions</h3>
+            <ol>
+              <li><strong>GVA</strong> = salary/wage costs + pre-tax profit + depreciation.</li>
+              <li><strong>GVA due to grant:</strong> The value of GVA with grant (Scenario 2) minus the value of GVA without (Scenario 1).</li>
+              <li><strong>Salary/wage cost:</strong> An average cost per employee is calculated using the baseline figures. This average is then applied to the total number of jobs created or lost to estimate the overall labour/wage cost. </li>
+              <li><strong>Non-labour costs</strong> = turnover − salaries/wages − pre-tax profit. These costs then scale proportionally with increases or decreases in turnover over Years 1–3.</li>
+              <li><strong>Productivity</strong> = turnover / employee count.</li>
+              <li><strong>How productivity increase is applied:</strong> a target is entered for each year as % vs baseline productivity. With manual headcount, the boxes show the productivity the headcount gives.</li>
+              <li><strong>How non-labour cost saving is applied</strong> entered per year as % points of turnover for that year.</li>
+              <li><strong>Base year:</strong> from April it is the current calendar year; before April it is the previous year.</li>
+              <li><strong>Depreciation:</strong> The baseline is applied to each year, the project cost is depreciated equally over three years in sceanrio 2.</li>
+              <li><strong>Depreciation and net profit</strong> Depreciation is excluded from the net profit calculation.</li>
+            </ol>
+          </div>
+
           <div>
-            <h3 style="color: #0b4e53; font-size: 0.95rem; margin: 0 0 6px 0; font-weight: 700;">1. Initializing Baseline Figures</h3>
+            <h3 style="color: #0b4e53; font-size: 0.95rem; margin: 0 0 6px 0; font-weight: 700;">Initialising Baseline Figures</h3>
             <p style="margin: 0;">Set initial Turnover, Net Profit, Employee Count, and Salary Costs. Click the <strong>Edit Baseline</strong> button in the summary panel to modify these values at any point.</p>
-          </div>
-          
-          <div>
-            <h3 style="color: #0b4e53; font-size: 0.95rem; margin: 0 0 6px 0; font-weight: 700;">2. Scenario 1 (Without Grant)</h3>
-            <p style="margin: 0;">Simulates growth path without grant intervention. Adjust forecasted Turnover by dragging points on the SVG chart, set annual headcount forecasts, and use sliders to set target net profit margins.</p>
-          </div>
-          
-          <div>
-            <h3 style="color: #0b4e53; font-size: 0.95rem; margin: 0 0 6px 0; font-weight: 700;">3. Scenario 2 (With Grant)</h3>
-            <p style="margin: 0;">Simulates project-supported growth. Headcount forecasts are driven by detailed **Salary Bands** of new jobs created. You can also log Upskilled FTEs and custom training notes.</p>
-          </div>
-          
-          <div>
-            <h3 style="color: #0b4e53; font-size: 0.95rem; margin: 0 0 6px 0; font-weight: 700;">4. GVA & ROI Calculations</h3>
-            <p style="margin: 0;">Gross Value Added (GVA) is calculated as: <code>Employee Costs + Net Profit</code>. Incremental GVA is the difference between Scenario 2 and Scenario 1. Set the intervention cost in <strong>Project cost (£k)</strong> to evaluate the Return on Investment (ROI) multiplier.</p>
-          </div>
-          
-          <div>
-            <h3 style="color: #0b4e53; font-size: 0.95rem; margin: 0 0 6px 0; font-weight: 700;">5. Comparison & Sanity Checks</h3>
-            <p style="margin: 0;">Click <strong>Expand</strong> in the Comparison Metrics panel to view sanity check warnings. This checks average salaries (caution if below £12k or above £150k), baseline alignment, profit margin boundaries (0% to 50%), and GVA ROI health.</p>
           </div>
         </div>
         <div class="modal-footer" style="border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px;">
@@ -701,7 +816,11 @@
     </div>
   </div>
 
-  <script src="GVA_modeler.js"></script>
+  <script src="src/vendor/exceljs.min.js"></script>
+  <script src="src/GVA_template.js"></script>
+  <script src="src/GVA_workbook.js"></script>
+  <script src="src/GVA_engine.js"></script>
+  <script src="src/GVA_modeler.js"></script>
 </body>
 
 </html>
